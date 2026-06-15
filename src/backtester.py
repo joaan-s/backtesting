@@ -11,7 +11,7 @@ class Backtester:
     """Download historical price data"""
     print(f"Downlowding data for {self.ticker}...")
     self.data = yf.download(self.ticker, start=self.start_date, end=self.end_date)
-    print(f"Downloaded {len(self.data)} days)
+    print(f"Downloaded {len(self.data)} days")
     return self.data
 
   def show_data(self):
