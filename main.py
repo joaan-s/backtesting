@@ -9,3 +9,6 @@ if __name__ == "__main__":
 
   # Show first 10 rows
   backtester.show_data()
+
+  # Show statistics
+  backtester.calculate_statistics()
