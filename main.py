@@ -12,3 +12,6 @@ if __name__ == "__main__":
 
   # Show statistics
   backtester.calculate_statistics()
+
+  # Show chart
+  backtester.plot_price_history()

@@ -1,4 +1,5 @@
 import yfinance as yf
+import matplotlib.pyplot as plt
 
 class Backtester:
   def __init__(self, ticker, start_date, end_date):
@@ -9,7 +10,7 @@ class Backtester:
 
   def download_data(self):
     """Download historical price data"""
-    print(f"Downlowding data for {self.ticker}...")
+    print(f"Downloading data for {self.ticker}...")
     self.data = yf.download(self.ticker, start=self.start_date, end=self.end_date)
     print(f"Downloaded {len(self.data)} days")
     return self.data
@@ -43,3 +44,20 @@ class Backtester:
       print(f"Starting Price: ${start_price:.2f}")
       print(f"Ending Price: ${end_price:.2f}")
       print(f"Total Change: ${price_change:.2f} ({price_change_percent:.2f}%)\n")
+
+  def plot_price_history(self):
+      """Display a chart of price history"""
+      if self.data is None:
+          print("No data available. Download data first!")
+          return
+      close_prices = self.data['Close'].values.flatten()  # Convert to numpy array
+
+      #Create the chart
+      plt.figure(figsize=(12, 6))
+      plt.plot(close_prices, linewidth=2, color='blue')
+      plt.title(f'{self.ticker} Price History ({self.start_date} to {self.end_date})', fontsize=14)
+      plt.xlabel('Days', fontsize=12)
+      plt.ylabel('Price ($)', fontsize=12)
+      plt.grid(True, alpha=0.3)
+      plt.tight_layout()
+      plt.show()
