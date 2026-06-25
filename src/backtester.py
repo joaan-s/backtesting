@@ -76,6 +76,24 @@ class Backtester:
       if not signals:
           print("No trading signals  generated")
 
+  def backtest_strategy(self, strategy):
+      """Run a strategy and display results"""
+      if self.data is None:
+          print("No data available. Download data first!")
+          return
+      signals = strategy.generate_signals(self.data['Close'])
+
+      print(f"\n=== Backtesting signals for {self.ticker} ===")
+      if signals:
+          for signal_type, day, price in signals:
+              print(f"Day {day}: {signal_type} at ${price:.2f}")
+      else:
+          print("No trading signals generated")
+
+      # Calculate backtest results
+      results = BacktestResults(signals, self.data['Close'])
+      results.print_results()
+
 class Strategy:
   def __init__(self, short_window=20, long_window=50):
     self.short_window = short_window
@@ -111,3 +129,74 @@ class Strategy:
               signals.append(('SELL', i, prices_flat[i]))
 
       return signals
+
+class BacktestResults:
+    """Calculate and display backtest results"""
+
+    def __init__(self, signals, prices, initial_capital=10000):
+        self.signals = signals
+        self.prices = prices.values.flatten()
+        self.initial_capital = initial_capital
+
+    def calculate_results(self):
+        """Calculate backtest metrics"""
+        if not self.signals:
+            print("No signals to test")
+            return
+
+        capital = self.initial_capital
+        shares = 0
+        trades = []
+
+        for signal_type, day, price in self.signals:
+            if signal_type == 'BUY':
+                # Buy as many shares as we can afford
+                shares = capital / price
+                trades.append({'type': 'BUY', 'day': day, 'price': price, 'shares': shares})
+                capital = 0
+
+            elif signal_type == 'SELL' and shares > 0:
+                # Sell all shares
+                capital = shares * price
+                trades.append({'type': 'SELL', 'day': day, 'price': price})
+                shares = 0
+
+        # If we still have shares left we sell them.
+        if shares > 0:
+            final_price = self.prices[-1]
+            capital = shares * final_price
+            trades.append({'type': 'SELL', 'day': self.prices[-1], 'price': final_price, 'capital': capital})
+
+        # Calculate results
+        total_return = capital - self.initial_capital
+        return_percent = total_return / capital * 100
+
+        return {
+            'trades': trades,
+            'initial_capital': self.initial_capital,
+            'final_capital': capital,
+            'total_return': total_return,
+            'return_percent': return_percent,
+            'num_trades': len([t for t in trades if t['type'] == 'BUY'])
+        }
+
+    def print_results(self):
+        """Print backtest metrics"""
+        results = self.calculate_results()
+
+        if results is None:
+            return
+
+        print(f"\n=== Backtest Results ===")
+        print(f"Initial Capital: ${results['initial_capital']:.2f}")
+        print(f"Final Capital: ${results['final_capital']:.2f}")
+        print(f"Total Return: ${results['total_return']:.2f}")
+        print(f"Return %: {results['return_percent']:.2f}%")
+        print(f"Number of Trades: {results['num_trades']}\n")
+
+        print("Trade Details:")
+        for trade in results['trades']:
+            if trade['type'] == 'BUY':
+                print(f"  Day {trade['day']}: BUY {trade['shares']:.4f} shares @ ${trade['price']:.2f}")
+            else:
+                print(f"  Day {trade['day']}: SELL @ ${trade['price']:.2f} = ${trade['capital']:.2f}")
