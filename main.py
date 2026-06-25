@@ -10,3 +10,6 @@ if __name__ == "__main__":
   # Run trading strategy
   strategy = Strategy(short_window=20, long_window=50)
   backtester.backtest_strategy(strategy)
+
+  # Plot signals on chart
+  backtester.plot_strategy_signals(strategy)
