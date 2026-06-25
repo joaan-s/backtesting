@@ -1,5 +1,6 @@
 import yfinance as yf
 import matplotlib.pyplot as plt
+import pandas as pd
 
 class Backtester:
   def __init__(self, ticker, start_date, end_date):
@@ -61,3 +62,52 @@ class Backtester:
       plt.grid(True, alpha=0.3)
       plt.tight_layout()
       plt.show()
+  def run_strategy(self, strategy):
+      """Run a strategy and display results"""
+      if self.data is None:
+          print("No data available. Download data first!")
+          return
+
+      signals = strategy.generate_signals(self.data['Close'])
+
+      print(f"\n=== Trading signals for {self.ticker} ===")
+      for signal_type, day, price in signals:
+          print(f"Day {day}: {signal_type} at ${price:.2f}")
+      if not signals:
+          print("No trading signals  generated")
+
+class Strategy:
+  def __init__(self, short_window=20, long_window=50):
+    self.short_window = short_window
+    self.long_window = long_window
+
+  def calculate_moving_averages(self, prices):
+      """Calculate short and long moving averages"""
+      short_ma = prices.rolling(window=self.short_window).mean()
+      long_ma = prices.rolling(window=self.long_window).mean()
+      return short_ma, long_ma
+
+  def generate_signals(self, prices):
+      """Generate buy/sell signals based on moving average crossover"""
+      # Flatten the prices to handle MultiIndex
+      prices_flat = prices.values.flatten()
+
+      # Calculate moving averages on flattened data
+      short_ma = pd.Series(prices_flat).rolling(window=self.short_window).mean()
+      long_ma = pd.Series(prices_flat).rolling(window=self.long_window).mean()
+
+      # Buy signal: short MA crosses above long MA
+      # Sell signal: short MA crosses below long MA
+      signals = []
+      for i in range(1, len(prices_flat)):
+          short_val = short_ma.iloc[i]
+          long_val = long_ma.iloc[i]
+          short_prev = short_ma.iloc[i - 1]
+          long_prev = long_ma.iloc[i - 1]
+
+          if short_val > long_val and short_prev <= long_prev:
+              signals.append(('BUY', i, prices_flat[i]))
+          elif short_val < long_val and short_prev >= long_prev:
+              signals.append(('SELL', i, prices_flat[i]))
+
+      return signals

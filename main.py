@@ -1,4 +1,4 @@
-from src.backtester import Backtester
+from src.backtester import Backtester, Strategy
 
 if __name__ == "__main__":
   # Create a backtester for Apple stock (AAPL)
@@ -15,3 +15,7 @@ if __name__ == "__main__":
 
   # Show chart
   backtester.plot_price_history()
+
+  # Run trading strategy
+  strategy = Strategy(short_window=20, long_window=50)
+  backtester.run_strategy(strategy)
