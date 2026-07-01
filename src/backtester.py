@@ -130,7 +130,7 @@ class Backtester:
           plt.tight_layout()
           plt.show()
 
-class Strategy:
+class DeathCrossStrategy:
   def __init__(self, short_window=20, long_window=50):
     self.short_window = short_window
     self.long_window = long_window
@@ -194,7 +194,7 @@ class BacktestResults:
             elif signal_type == 'SELL' and shares > 0:
                 # Sell all shares
                 capital = shares * price
-                trades.append({'type': 'SELL', 'day': day, 'price': price})
+                trades.append({'type': 'SELL', 'day': day, 'price': price, 'capital': capital})
                 shares = 0
 
         # If we still have shares left we sell them.

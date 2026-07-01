@@ -1,4 +1,4 @@
-from src.backtester import Backtester, Strategy
+from src.backtester import Backtester, DeathCrossStrategy
 
 if __name__ == "__main__":
   # Create a backtester for Apple stock (AAPL)
@@ -8,7 +8,12 @@ if __name__ == "__main__":
   backtester.download_data()
 
   # Run trading strategy
-  strategy = Strategy(short_window=20, long_window=50)
+  print("Elige una estrategia:")
+  print("1) Death Cross Strategy")
+
+  strategy = input("Escribe el número de tu opción: ")
+  if strategy == "1":
+      strategy = DeathCrossStrategy(short_window=20, long_window=50)
   backtester.backtest_strategy(strategy)
 
   # Plot signals on chart
