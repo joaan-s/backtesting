@@ -14,6 +14,8 @@ if __name__ == "__main__":
   strategy = input("Escribe el número de tu opción: ")
   if strategy == "1":
       strategy = DeathCrossStrategy(short_window=20, long_window=50)
+  else:
+      print(ValueError)
   backtester.backtest_strategy(strategy)
 
   # Plot signals on chart

@@ -116,19 +116,19 @@ class Backtester:
           buy_days, buy_prices = zip(*buy_signals)
           plt.scatter(buy_days, buy_prices, color = 'green', marker='^', s=100, label='BUY Signal')
 
-          # Plot sell signals (red dots)
-          if sell_signals:
-              sell_days, sell_prices = zip(*sell_signals)
-              plt.scatter(sell_days, sell_prices, color='red', marker='v', s=100, label='SELL Signal')
+      # Plot sell signals (red dots)
+      if sell_signals:
+          sell_days, sell_prices = zip(*sell_signals)
+          plt.scatter(sell_days, sell_prices, color='red', marker='v', s=100, label='SELL Signal')
 
-          plt.title(f'{self.ticker} Price History with Trading Signals ({self.start_date} to {self.end_date})',
-                    fontsize=14)
-          plt.xlabel('Days', fontsize=12)
-          plt.ylabel('Price ($)', fontsize=12)
-          plt.grid(True, alpha=0.3)
-          plt.legend()
-          plt.tight_layout()
-          plt.show()
+      plt.title(f'{self.ticker} Price History with Trading Signals ({self.start_date} to {self.end_date})',
+                fontsize=14)
+      plt.xlabel('Days', fontsize=12)
+      plt.ylabel('Price ($)', fontsize=12)
+      plt.grid(True, alpha=0.3)
+      plt.legend()
+      plt.tight_layout()
+      plt.show()
 
 class DeathCrossStrategy:
   def __init__(self, short_window=20, long_window=50):
@@ -157,8 +157,6 @@ class DeathCrossStrategy:
       df['Long_Prev'] = df['Long'].shift(1)
       df['BUY_Signal'] = (df['Short'] > df['Long']) & (df['Short_Prev'] <= df['Long_Prev'])
       df['SELL_Signal'] = (df['Short'] < df['Long']) & (df['Short_Prev'] >= df['Long_Prev'])
-      print(df)
-      print(df.iloc[45:55].to_string())
 
       # Buy signal: short MA crosses above long MA
       # Sell signal: short MA crosses below long MA
@@ -213,7 +211,7 @@ class BacktestResults:
 
         # Calculate results
         total_return = capital - self.initial_capital
-        return_percent = total_return / capital * 100
+        return_percent = total_return / self.initial_capital * 100
 
         return {
             'trades': trades,
