@@ -145,26 +145,34 @@ class DeathCrossStrategy:
       """Generate buy/sell signals based on moving average crossover"""
       # Flatten the prices to handle MultiIndex
       prices_flat = prices.values.flatten()
+      df = pd.DataFrame({'Close': prices_flat})
 
       # Calculate moving averages on flattened data
       short_ma = pd.Series(prices_flat).rolling(window=self.short_window).mean()
       long_ma = pd.Series(prices_flat).rolling(window=self.long_window).mean()
 
+      df['Short'] = short_ma
+      df['Long'] = long_ma
+      df['Short_Prev'] = df['Short'].shift(1)
+      df['Long_Prev'] = df['Long'].shift(1)
+      df['BUY_Signal'] = (df['Short'] > df['Long']) & (df['Short_Prev'] <= df['Long_Prev'])
+      df['SELL_Signal'] = (df['Short'] < df['Long']) & (df['Short_Prev'] >= df['Long_Prev'])
+      print(df)
+      print(df.iloc[45:55].to_string())
+
       # Buy signal: short MA crosses above long MA
       # Sell signal: short MA crosses below long MA
-      signals = []
-      for i in range(1, len(prices_flat)):
-          short_val = short_ma.iloc[i]
-          long_val = long_ma.iloc[i]
-          short_prev = short_ma.iloc[i - 1]
-          long_prev = long_ma.iloc[i - 1]
+      buy_days = df[df['BUY_Signal']].index.tolist()
+      sell_days = df[df['SELL_Signal']].index.tolist()
 
-          if short_val > long_val and short_prev <= long_prev:
-              signals.append(('BUY', i, prices_flat[i]))
-          elif short_val < long_val and short_prev >= long_prev:
-              signals.append(('SELL', i, prices_flat[i]))
+      signals = []
+      for day in buy_days:
+          signals.append(('BUY', day, df.loc[day, 'Close']))
+      for day in sell_days:
+          signals.append(('SELL', day, df.loc[day, 'Close']))
 
       return signals
+
 
 class BacktestResults:
     """Calculate and display backtest results"""
