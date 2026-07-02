@@ -28,6 +28,7 @@ This will:
 2. Run moving average strategy (20/50 day windows)
 3. Calculate backtest results
 4. Display chart with buy/sell signals
+5. For changing dates and tickers use config.json
 
 ## Project Structure
 
@@ -36,7 +37,7 @@ src/
   backtester.py    - Core classes (Backtester, Strategy, BacktestResults)
 main.py            - Entry point
 requirements.txt   - Dependencies
-ROADMAP.md         - Development plan
+config.json        - User configuration
 ```
 
 ## Current Capabilities
