@@ -130,6 +130,24 @@ class Backtester:
           plt.tight_layout()
           plt.show()
 
+  def run_batch_test(self, strategy):
+      if self.data is None:
+          print("No data available. Download data first!")
+          return
+
+      if not isinstance(strategy, DeathCrossStrategy):
+          raise ValueError("Strategy must be DeathCrossStrategy")
+
+      results_list = strategy.batch_test_signals(self.data['Close'])
+
+      print(f"\n=== Trading signals for {self.ticker} with 20/50, 30/100, and 50/200 ===")
+      for label, signals in results_list:
+          print(f"\nFor ratio {label}:")
+          results = BacktestResults(signals, self.data['Close'])
+          results.print_results()
+      return
+
+
 class DeathCrossStrategy:
   def __init__(self, short_window=20, long_window=50):
     self.short_window = short_window
@@ -169,7 +187,23 @@ class DeathCrossStrategy:
       for day in sell_days:
           signals.append(('SELL', day, df.loc[day, 'Close']))
 
+      # Sort chronologically by day - without this, all BUYs would come
+      # before all SELLs regardless of which happened first, which corrupts
+      # the trade simulation in BacktestResults
+      signals.sort(key=lambda signal: signal[1])
+
       return signals
+
+  def batch_test_signals(self, prices):
+      """Tests the usual ratios 20/50, 30/100, 50/200"""
+      signals_short = DeathCrossStrategy(short_window=20, long_window=50).generate_signals(prices)
+      signals_med = DeathCrossStrategy(short_window=30, long_window=100).generate_signals(prices)
+      signals_long = DeathCrossStrategy(short_window=50, long_window=200).generate_signals(prices)
+      return [
+          ("20/50", signals_short),
+          ("30/100", signals_med),
+          ("50/200", signals_long),
+      ]
 
 
 class BacktestResults:
@@ -207,11 +241,11 @@ class BacktestResults:
         if shares > 0:
             final_price = self.prices[-1]
             capital = shares * final_price
-            trades.append({'type': 'SELL', 'day': self.prices[-1], 'price': final_price, 'capital': capital})
+            trades.append({'type': 'SELL', 'day': len(self.prices)-1, 'price': final_price, 'capital': capital})
 
         # Calculate results
         total_return = capital - self.initial_capital
-        return_percent = total_return / capital * 100
+        return_percent = total_return / self.initial_capital * 100
 
         return {
             'trades': trades,

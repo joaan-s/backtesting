@@ -12,7 +12,7 @@
 
 ---
 
-## Phase 2: Strategy Comparison (Not Started)
+## Phase 2: Strategy Comparison (In progress)
 **Goal:** Test multiple strategies and compare results
 
 - [ ] Parameterizable strategy windows

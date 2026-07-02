@@ -38,7 +38,4 @@ if __name__ == "__main__":
     strategy = build_strategy(config)
 
     # Run trading strategy
-    backtester.backtest_strategy(strategy)
-
-    # Plot signals on chart
-    backtester.plot_strategy_signals(strategy)
+    backtester.run_batch_test(strategy)
