@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from src.data_provider import DataProvider
 
 class Backtester:
@@ -45,6 +46,7 @@ class Backtester:
       print(f"Starting Price: ${start_price:.2f}")
       print(f"Ending Price: ${end_price:.2f}")
       print(f"Total Change: ${price_change:.2f} ({price_change_percent:.2f}%)\n")
+
 
   def plot_price_history(self):
       """Display a chart of price history"""
@@ -142,11 +144,10 @@ class Backtester:
 
       print(f"\n=== Trading signals for {self.ticker} with 20/50, 30/100, and 50/200 ===")
       for label, signals in results_list:
-          print(f"\nFor ratio {label}:")
+          print(f"\nFor {label}:")
           results = BacktestResults(signals, self.data['Close'])
           results.print_results()
       return
-
 
 class DeathCrossStrategy:
   def __init__(self, short_window=20, long_window=50):
@@ -195,16 +196,29 @@ class DeathCrossStrategy:
       return signals
 
   def batch_test_signals(self, prices):
-      """Tests the usual ratios 20/50, 30/100, 50/200"""
+      """Tests the buy and hold strategy and usual ratios 20/50, 30/100, 50/200"""
+      signals_buy_and_hold = BuyAndHoldStrategy().generate_signals(prices)
       signals_short = DeathCrossStrategy(short_window=20, long_window=50).generate_signals(prices)
       signals_med = DeathCrossStrategy(short_window=30, long_window=100).generate_signals(prices)
       signals_long = DeathCrossStrategy(short_window=50, long_window=200).generate_signals(prices)
       return [
-          ("20/50", signals_short),
-          ("30/100", signals_med),
-          ("50/200", signals_long),
+          ("Buy and hold", signals_buy_and_hold),
+          ("Ratio 20/50", signals_short),
+          ("Ratio 30/100", signals_med),
+          ("Ratio 50/200", signals_long),
       ]
 
+class BuyAndHoldStrategy:
+    def generate_signals(self, prices):
+        """Buys de first day and waits"""
+        prices_flat = prices.values.flatten()
+        last_day = len(prices_flat)-1
+        signals = [
+            ('BUY', 0, prices_flat[0]),
+            ('SELL', last_day, prices_flat[last_day])
+        ]
+
+        return signals
 
 class BacktestResults:
     """Calculate and display backtest results"""
@@ -214,28 +228,36 @@ class BacktestResults:
         self.prices = prices.values.flatten()
         self.initial_capital = initial_capital
 
+    @property
     def calculate_results(self):
         """Calculate backtest metrics"""
         if not self.signals:
             print("No signals to test")
-            return
+            return None
 
         capital = self.initial_capital
         shares = 0
         trades = []
+        equity_curve = []
 
-        for signal_type, day, price in self.signals:
-            if signal_type == 'BUY':
-                # Buy as many shares as we can afford
-                shares = capital / price
-                trades.append({'type': 'BUY', 'day': day, 'price': price, 'shares': shares})
-                capital = 0
+        signal_dict = {day: (sig_type, price) for sig_type, day, price in self.signals}
+        for day, price in enumerate(self.prices):
+            if day in signal_dict:
+                sig_type, sig_price = signal_dict[day]
+                if sig_type == 'BUY' and shares == 0:
+                    # Compramos tantas acciones como podamos
+                    shares = capital / sig_price
+                    trades.append({'type': 'BUY', 'day': day, 'price': sig_price, 'shares': shares})
+                    capital = 0
 
-            elif signal_type == 'SELL' and shares > 0:
-                # Sell all shares
-                capital = shares * price
-                trades.append({'type': 'SELL', 'day': day, 'price': price, 'capital': capital})
-                shares = 0
+                elif sig_type == 'SELL' and shares > 0:
+                    # Vendemos lo que falta
+                    capital = shares * sig_price
+                    trades.append({'type': 'SELL', 'day': day, 'price': sig_price, 'capital': capital})
+                    shares = 0
+
+            daily_value = capital + (shares * price)
+            equity_curve.append(daily_value)
 
         # If we still have shares left we sell them.
         if shares > 0:
@@ -247,18 +269,30 @@ class BacktestResults:
         total_return = capital - self.initial_capital
         return_percent = total_return / self.initial_capital * 100
 
+        # Cálculo de Ratio de Sharpe
+        equity_series = pd.Series(equity_curve)
+        daily_returns = equity_series.pct_change().dropna()
+        risk_free_rate = 0
+
+        if daily_returns.std() != 0:
+            sharpe_ratio = ((daily_returns.mean() - risk_free_rate)/ daily_returns.std()) * np.sqrt(252)
+        else:
+            sharpe_ratio = 0.03
+
+
         return {
             'trades': trades,
             'initial_capital': self.initial_capital,
             'final_capital': capital,
             'total_return': total_return,
             'return_percent': return_percent,
+            'sharpe-ratio': sharpe_ratio,
             'num_trades': len([t for t in trades if t['type'] == 'BUY'])
         }
 
     def print_results(self):
         """Print backtest metrics"""
-        results = self.calculate_results()
+        results = self.calculate_results
 
         if results is None:
             return
@@ -268,6 +302,7 @@ class BacktestResults:
         print(f"Final Capital: ${results['final_capital']:.2f}")
         print(f"Total Return: ${results['total_return']:.2f}")
         print(f"Return %: {results['return_percent']:.2f}%")
+        print(f"Sharpe Ratio: {results['sharpe-ratio']:.2f}")
         print(f"Number of Trades: {results['num_trades']}\n")
 
         print("Trade Details:")
